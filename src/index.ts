@@ -87,8 +87,20 @@ const schema = makeExecutableSchema({
       people: [Person!]!
       cars: [Car!]!
     }
+
+    type Mutation {
+      buyNewCar: Car
+    }
   `,
   resolvers: {
+    Mutation: {
+      buyNewCar: async () => {
+        const newCar = new Car(`${Math.random()}`.substring(2, 8));
+        newCar.registerTo(jane.name);
+        carStore.save(newCar);
+        return newCar;
+      },
+    },
     Query: {
       people: () => personStore.all(),
       cars: () => carStore.all(),
