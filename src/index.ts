@@ -3,6 +3,8 @@ import { makeExecutableSchema } from "@graphql-tools/schema";
 
 import { boot } from "./boot";
 
+const me = { name: "John", age: 30 };
+
 const schema = makeExecutableSchema({
   typeDefs: gql`
     type Person {
@@ -14,7 +16,11 @@ const schema = makeExecutableSchema({
       me: Person!
     }
   `,
-  resolvers: {},
+  resolvers: {
+    Query: {
+      me: () => me,
+    },
+  },
 });
 
 boot(4000, schema);
