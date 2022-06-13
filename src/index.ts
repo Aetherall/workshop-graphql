@@ -70,6 +70,17 @@ personStore.save(jane);
 carStore.save(punto);
 carStore.save(multipla);
 
+interface PersonType {
+  // belongs in infrastructure
+  name: string;
+  age: number;
+}
+
+interface CarType {
+  greyCardId: string;
+  ownerName?: string;
+}
+
 const schema = makeExecutableSchema({
   typeDefs: gql`
     type Person {
@@ -94,7 +105,10 @@ const schema = makeExecutableSchema({
   `,
   resolvers: {
     Mutation: {
-      buyNewCar: async (parent, { ownerName }: { ownerName: string }) => {
+      buyNewCar: async (
+        parent: never,
+        { ownerName }: { ownerName: string }
+      ) => {
         const person = await personStore.load(ownerName);
         if (!person) {
           throw new Error("Applicative Error: Owner unknown");
@@ -111,20 +125,20 @@ const schema = makeExecutableSchema({
       cars: () => carStore.all(),
     },
     Person: {
-      name: (person: Person, { capitalize }) => {
+      name: (person: PersonType, { capitalize }) => {
         if (capitalize) {
           return person.name.toUpperCase();
         }
         return person.name;
       },
-      cars: async (person: Person) => {
+      cars: async (person: PersonType) => {
         // or use a projection / efficient db query to retrieve the right cars
         const cars = await carStore.all();
         return cars.filter((car) => car.ownerName === person.name);
       },
     },
     Car: {
-      owner: async (car: Car) => {
+      owner: async (car: CarType) => {
         // we can bypass the applicative layer when doing CQRS,
         // but otherwise its better to use a query from the applicative
         // layer rather than using the store directly
