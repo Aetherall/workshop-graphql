@@ -21,7 +21,8 @@ const schema = makeExecutableSchema({
       me: () => me,
     },
     Person: {
-      age: () => 20, // overrided by the resolver
+      age: () => 20,
+      nameLength: () => 4, // cant add resolver to a field that is not defined in the schema
     },
   },
 });
