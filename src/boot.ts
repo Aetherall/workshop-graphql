@@ -1,7 +1,10 @@
 import { createServer } from "http";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
-import { ApolloServerPluginDrainHttpServer } from "apollo-server-core";
+import {
+  ApolloServerPluginDrainHttpServer,
+  ApolloServerPluginInlineTrace,
+} from "apollo-server-core";
 import { WebSocketServer } from "ws";
 import { useServer } from "graphql-ws/lib/use/ws";
 import { GraphQLSchema } from "graphql";
@@ -25,7 +28,7 @@ export async function boot(PORT: number, schema: GraphQLSchema) {
     plugins: [
       // Proper shutdown for the HTTP server.
       ApolloServerPluginDrainHttpServer({ httpServer }),
-
+      ApolloServerPluginInlineTrace(),
       // Proper shutdown for the WebSocket server.
       {
         async serverWillStart() {
