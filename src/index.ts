@@ -73,7 +73,7 @@ carStore.save(multipla);
 const schema = makeExecutableSchema({
   typeDefs: gql`
     type Person {
-      name: String!
+      name(capitalize: Boolean): String!
       age: Int!
       cars: [Car!]!
     }
@@ -111,6 +111,12 @@ const schema = makeExecutableSchema({
       cars: () => carStore.all(),
     },
     Person: {
+      name: (person: Person, { capitalize }) => {
+        if (capitalize) {
+          return person.name.toUpperCase();
+        }
+        return person.name;
+      },
       cars: async (person: Person) => {
         // or use a projection / efficient db query to retrieve the right cars
         const cars = await carStore.all();
