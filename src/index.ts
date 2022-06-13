@@ -20,6 +20,9 @@ const schema = makeExecutableSchema({
     Query: {
       me: () => me,
     },
+    Person: {
+      age: () => 20, // overrided by the resolver
+    },
   },
 });
 
