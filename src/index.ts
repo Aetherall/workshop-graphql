@@ -1,7 +1,10 @@
 import { gql } from "apollo-server-core";
 import { makeExecutableSchema } from "@graphql-tools/schema";
+import { PubSub, withFilter } from "graphql-subscriptions";
 
 import { boot } from "./boot";
+
+const pubsub = new PubSub();
 
 abstract class Aggregate {
   abstract id: string;
@@ -102,6 +105,10 @@ const schema = makeExecutableSchema({
     type Mutation {
       buyNewCar(ownerName: String!): Car
     }
+
+    type Subscription {
+      personCars(ownerName: String!): [Car!]!
+    }
   `,
   resolvers: {
     Mutation: {
@@ -117,6 +124,10 @@ const schema = makeExecutableSchema({
         const newCar = new Car(`${Math.random()}`.substring(2, 8));
         newCar.registerTo(ownerName);
         carStore.save(newCar);
+        pubsub.publish("CarBought", {
+          greyCardId: newCar.greyCardId,
+          ownerName,
+        });
         return newCar;
       },
     },
@@ -147,6 +158,20 @@ const schema = makeExecutableSchema({
           const owner = await personStore.load(car.ownerName);
           return owner;
         }
+      },
+    },
+    Subscription: {
+      personCars: {
+        subscribe: withFilter(
+          () => pubsub.asyncIterator(["CarBought"]),
+          async (payload, variables) => {
+            return payload.ownerName === variables.ownerName;
+          }
+        ),
+        resolve: async ({ ownerName }: { ownerName: string }) => {
+          const cars = await carStore.all();
+          return cars.filter((car) => car.ownerName === ownerName);
+        },
       },
     },
   },
