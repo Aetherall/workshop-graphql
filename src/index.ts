@@ -10,6 +10,7 @@ const schema = makeExecutableSchema({
     type Person {
       name: String! # ! means that this field is required
       age: Int!
+      nameLength: Int!
     }
 
     type Query {
@@ -22,7 +23,7 @@ const schema = makeExecutableSchema({
     },
     Person: {
       age: () => 20,
-      nameLength: () => 4, // cant add resolver to a field that is not defined in the schema
+      nameLength: (parent) => parent.name.length, // here parent is "me" because "me" is the Person I resolved for the query
     },
   },
 });
