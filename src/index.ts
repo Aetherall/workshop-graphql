@@ -89,14 +89,19 @@ const schema = makeExecutableSchema({
     }
 
     type Mutation {
-      buyNewCar: Car
+      buyNewCar(ownerName: String!): Car
     }
   `,
   resolvers: {
     Mutation: {
-      buyNewCar: async () => {
+      buyNewCar: async (parent, { ownerName }: { ownerName: string }) => {
+        const person = await personStore.load(ownerName);
+        if (!person) {
+          throw new Error("Applicative Error: Owner unknown");
+        }
+
         const newCar = new Car(`${Math.random()}`.substring(2, 8));
-        newCar.registerTo(jane.name);
+        newCar.registerTo(ownerName);
         carStore.save(newCar);
         return newCar;
       },
