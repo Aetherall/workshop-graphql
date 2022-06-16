@@ -11,21 +11,29 @@ import { GraphQLSchema } from "graphql";
 import cookieParser from "cookie-parser";
 
 export async function boot(PORT: number, schema: GraphQLSchema) {
-  // Create an Express app and HTTP server; we will attach the WebSocket
-  // server and the ApolloServer to this HTTP server.
-  const app = express();
-  app.use(cookieParser());
-  const httpServer = createServer(app);
+  // Create an express application that will serve the GraphQL endpoint
+  const expressApp = express();
 
-  // Set up WebSocket server.
+  // We handle cookies so we can do authentication
+  expressApp.use(cookieParser());
+
+  // We wrap the express app into a native http application so we can use the native api
+  const httpServer = createServer(expressApp);
+
+  // We create the websocket server using the native http server
+  // This allows us to use the same port for both http and websocket
+  // The mechanism used is called "upgrade" by "switching protocols"
   const wsServer = new WebSocketServer({
     server: httpServer,
     path: "/graphql",
   });
+
+  // We create the WS GQL server
   const serverCleanup = useServer({ schema }, wsServer);
 
-  // Set up ApolloServer.
-  const server = new ApolloServer({
+  // We create the HTTP GQL server ( with authentication )
+  // Since every ws connection is also a http connection, we can use the same authentication
+  const apollo = new ApolloServer({
     schema,
     context: ({ req, res }) => {
       const setToken = (token: string) =>
@@ -45,6 +53,7 @@ export async function boot(PORT: number, schema: GraphQLSchema) {
     plugins: [
       // Proper shutdown for the HTTP server.
       ApolloServerPluginDrainHttpServer({ httpServer }),
+      // Inline tracing in Apollo Studio.
       ApolloServerPluginInlineTrace(),
       // Proper shutdown for the WebSocket server.
       {
@@ -58,25 +67,27 @@ export async function boot(PORT: number, schema: GraphQLSchema) {
       },
     ],
   });
-  await server.start();
-  server.applyMiddleware({
-    app,
+
+  // Starting the Apollo Server
+  await apollo.start();
+
+  // Attach the GraphQL endpoint to the express app
+  apollo.applyMiddleware({
+    app: expressApp,
     cors: {
       origin: ["https://studio.apollographql.com"],
       credentials: true,
     },
   });
 
-  // Vulnerability
-  app.set("trust proxy", 1);
-
-  // Now that our HTTP server is fully set up, actually listen.
+  // Listens from the HTTP server because the WS server is attached to the same port
+  // And the GQL server is wrapped by the express app
   httpServer.listen(PORT, () => {
     console.log(
-      `🚀 Query endpoint ready at http://localhost:${PORT}${server.graphqlPath}`
+      `🚀 Query endpoint ready at http://localhost:${PORT}${apollo.graphqlPath}`
     );
     console.log(
-      `🚀 Subscription endpoint ready at ws://localhost:${PORT}${server.graphqlPath}`
+      `🚀 Subscription endpoint ready at ws://localhost:${PORT}${apollo.graphqlPath}`
     );
   });
 }
