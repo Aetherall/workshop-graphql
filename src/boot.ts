@@ -14,6 +14,8 @@ export async function boot(PORT: number, schema: GraphQLSchema) {
   // Create an express application that will serve the GraphQL endpoint
   const expressApp = express();
 
+  // expressApp.get('stnoeahus', () => {})
+
   // We handle cookies so we can do authentication
   expressApp.use(cookieParser());
 
